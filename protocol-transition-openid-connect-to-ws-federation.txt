@@ -1,0 +1,40 @@
+title Protocol Transition: OpenID Connect to WS-Federation
+participant End User
+participant "User-Agent"
+participant "OAuth2 Client/OIDC Relying Party" as Client
+participant Resource IdP
+participant Requestor IdP
+participant User Repository
+End User->+User-Agent: Clicks on login link\nor button or launches app.
+User-Agent->+Client: Initial request to client(1).
+Client->User-Agent: Redirect to Authorization Server (IdP)
+loop: Oauth2 + OIDC Specs
+User-Agent->+Resource IdP: OAuth2 request to Authorization Endpoint with client_id and redirect_uri(2)
+Resource IdP->User-Agent: Redirect to User IdP's WS-Federation SignOn Endpoint
+loop: WS-Federation spec
+User-Agent->+Requestor IdP: Send request to Requester IdP's WS-Federaton SignOn Endpoint (with Resource IdP's wtrealm identifier and wa=signin1.0)(3)
+Requestor IdP->User-Agent: Redirect to Authentication Workflow Endpoint
+User-Agent->Requestor IdP: Send request to Authentication Workflow Endpoint(4)
+Requestor IdP->User-Agent: Begin authentiation sequence (skipping details that vary widely)
+User-Agent->Requestor IdP: Submit credentials (end authentication sequence)
+Requestor IdP->+User Repository: Validate credentials (username +\n password)against User Repository
+User Repository->-Requestor IdP: Return success or fail\nAssume success here:).
+Requestor IdP->User-Agent: Redirect to WS-Federation SignIn Endpoint (this time with an authenticated session on Requestor IdP).
+User-Agent->Requestor IdP: Send request to WS-Federation SignIn Endpoint (this time with an authenticated session on Requestor IdP).(5)
+Requestor IdP->-User-Agent: Redirect to Resource IdP's WS-Federation\nApplication Service Endpoint (with security token)
+User-Agent->Resource IdP:Submit security token to Resource IdP(6)
+Resource IdP->Resource IdP: Validate security token from Requestor IdP
+end
+Resource IdP->User-Agent: Redirect to Authorization Endpoint w/ original parameters\n(complete OIDC protocol steps, now with an authenticated session)
+User-Agent->Resource IdP: Submit request (with original parameters)\nto Authorization Endpoint (user has an authenticated session on Resource IdP)(7)
+Resource IdP->User-Agent: Redirect to Client with authorization code.
+User-Agent->Client: Submit Authorization Code to the Client's redirect_uri(8)
+Client->Resource IdP: Request Access Token based upon Authorization Code(9)
+Resource IdP->Resource IdP: Validate Authorization Code
+Resource IdP->Client: Return Access Token
+Client->Resource IdP: Send request to UserInfo Endpoint\nto obtain additional user attributes(10)
+Resource IdP->-Client: Return additional user attributes.
+end
+Client->Client: Build security session on Client.
+Client->-User-Agent: Return results
+User-Agent->-End User: User views results

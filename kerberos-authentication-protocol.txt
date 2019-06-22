@@ -1,0 +1,41 @@
+title Kerberos Authentication Protocol
+participant User as U
+participant Client as C
+participant Authentication Server as AS
+participant Ticket Granting Server as TGS
+participant User Database as DB
+participant Service Server as SS
+U->C: User logs into Client by providing username and password 
+C->C: Client converts password to a symmetric key (through scheduling algorithm or one-way hash) — this is the Client’s secret key (or symmetric key).
+loop: Authentication Server Exchange
+C->AS: Client sends authentication request (Message 0, see below) to the AS.
+AS->DB: AS searches for user in its database.
+AS->AS: If found, AS uses user’s password to generate secret that then encrypts the response Message 1. If not found, an error message is returned to the Client.
+AS->AS: AS uses the TGS secret key to encrypt Message 2.
+AS->C: AS returns Messages 1 & 2 to the Client.
+C->C: Client decrypts Message 1 with user’s secret key. Note, the Client cannot decrypt Message 2.
+C->C: Client/TGS Session Key extracted from decrypted Message 1.
+end
+loop: Ticket Granting Server Exchange
+C->C: Client builds Message 3 (contains Message 2) and Message 4 (the authenticator).
+C->TGS: Client sends Message 3 and Message 4 to TGS.
+TGS->TGS: Retrieve Message 2 from Message 3.
+TGS->TGS: TGS decrypts Message 2 using the the TGS secret key. TGS now has the client/TGS session key.
+TGS->TGS: TGS uses this key to decrypt Message 4 (the authenticator).
+TGS->TGS: TGS compares client ID from Message 3 & Message 4.
+TGS->TGS: If match, TGS generates Message 5 & Message 6. Otherwise, error.
+TGS->C: TGS sends Message 5 and Message 6 to Client.
+C->C: Client decrypts Message 6 using the Client/TGS Session Key. Client now has the Client/Server or Service Session Key.
+end
+loop: Service Server Exchange
+C->C: Client builds Message 7 (an authenticator).
+C->SS: Client sends Message 5 & Message 7 to the Service Server (SS).
+SS->SS: SS decrypts the ticket (Message 5) using its own secret key to retrieve the Client/Server Session Key.
+SS->SS: Using the session key, SS decrypts the Authenticator.
+SS->SS: Compare client ID from message 5 and 7.
+SS->C: If match, send Message 8 to client to confirm server identity and willingness to service client request (this part is optional).
+C->C: Client decrypts message 8 using the Service Session Key.
+C->C: Check timestamp on Message 8.
+C->C: The client now trusts the SS.
+end
+C->SS: Client now interacts with SS as needed.

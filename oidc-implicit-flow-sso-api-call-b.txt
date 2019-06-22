@@ -1,0 +1,24 @@
+title OIDC Implicit Flow - SSO
+participant End User
+participant User-Agent
+participant Relying Party (Client)
+participant OpenID Provider
+End User->+Relying Party (Client): Clicks on login link\nor button or launches app\n(if this is a web application or SPA,\nwill go through User-Agent).
+loop Governed by OIDC spec
+Relying Party (Client)->+User-Agent: Redirect to Authorization Server (IdP)
+User-Agent->+OpenID Provider: OAuth2 request to Authorization Endpoint with client_id and redirect_uri
+OpenID Provider->User-Agent: Redirect to authentication workflow
+User-Agent->OpenID Provider: Start authenticaction workflow (and possibly grant consent)
+OpenID Provider->User-Agent: Return authentication workflow
+User-Agent->End User: Prompt for credentials
+End User->User-Agent: Enter Credentials.
+User-Agent->OpenID Provider: Submit Credentials
+OpenID Provider->OpenID Provider: Validate credentials
+OpenID Provider->User-Agent: Redirect to RP with ID Token
+User-Agent->User-Agent: Extract ID Token from URI Fragment
+User-Agent->Relying Party (Client):Submit ID Token to RP.
+Relying Party (Client)->Relying Party (Client): Validate ID Token
+Relying Party (Client)->OpenID Provider: Request additional claims from UserInfo Endpoint, if needed
+OpenID Provider->Relying Party (Client):Return additional claims
+end
+Relying Party (Client)->End User: View Results\n(if this is a web application or SPA,\nwill go through User-Agent)

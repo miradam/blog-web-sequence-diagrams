@@ -1,0 +1,26 @@
+title WS-Federation (Requestor IdP/STS & Resource IdP/STS)
+participant Requester
+participant Requester IdP/STS
+participant WS Resource
+participant Resource IdP/STS
+Requester->WS Resource: Request resource(1)
+WS Resource->Requester: Redirect requester to Resource IdP/STS(2).
+Requester->Resource IdP/STS: Initiate authentication process (request authentication)(2)
+Resource IdP/STS->Requester: Begin Workflow to identify realm
+Requester<->Resource IdP/STS: Home Realm Discovery Workflow
+Requester->Resource IdP/STS: Submit Home Realm
+Resource IdP/STS->Requester: Redirect to Requester IdP/STS
+Requester->Requester IdP/STS: Initiate authenitcation process (request authentication)
+Requester IdP/STS->Requester: Begin authentiation sequence
+Requester->Requester IdP/STS: Submit credentials (end authentidation sequence)
+Requester IdP/STS->Requester IdP/STS: Validate credentials
+Requester IdP/STS->Requester: Redirect to Resource IdP/STS (with security token)
+Requester->Resource IdP/STS:Submit security token to authenticate user against Resource IdP/STS
+Resource IdP/STS->Resource IdP/STS: Validate security token
+Resource IdP/STS->Requester: Redirect to Resource with security token that resource can consume
+Requester->WS Resource: Submit security token
+WS Resource->WS Resource: Validate token and build security session
+WS Resource->Requester: Redirect to original resource (with security tracking mechanism)
+Requester->WS Resource: Request original resource (with security tracking)
+WS Resource->Requester: Return original resource
+WS Resource->Requester: Return original resource

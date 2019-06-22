@@ -1,0 +1,33 @@
+title OIDC Implicit Flow - SSO & API Call
+participant End User
+participant User-Agent
+participant Relying Party (Client)
+participant OpenID Provider
+participant Resource Server (API Provider)
+End User->+Relying Party (Client): Clicks on login link\nor button or launches app\n(if this is a web application or SPA,\nwill go through User-Agent).
+loop Governed by OIDC spec
+Relying Party (Client)->+User-Agent: Redirect to Authorization Server (IdP)
+User-Agent->+OpenID Provider: OAuth2 request to Authorization Endpoint with client_id and redirect_uri
+OpenID Provider->User-Agent: Redirect to authentication workflow
+User-Agent->OpenID Provider: Start authenticaction workflow (and possibly grant consent)
+OpenID Provider->User-Agent: Return authentication workflow
+User-Agent->End User: Prompt for credentials
+End User->User-Agent: Enter Credentials.
+User-Agent->OpenID Provider: Submit Credentials
+OpenID Provider->OpenID Provider: Validate credentials
+OpenID Provider->User-Agent: Redirect to RP with ID Token and Access Token
+User-Agent->User-Agent: Extract tokens from URI Fragment
+User-Agent->Relying Party (Client):Submit ID Token & Access Token to RP.
+Relying Party (Client)->Relying Party (Client): Validate ID Token
+Relying Party (Client)->Relying Party (Client): Optionally validate Access Token
+Relying Party (Client)->OpenID Provider: Request additional claims from UserInfo Endpoint, if needed
+OpenID Provider->OpenID Provider:Validare access token
+OpenID Provider->Relying Party (Client):Return additional claims
+end
+Relying Party (Client)->+Resource Server (API Provider): Send request (API or otherwise) to Resource Server with Access Token
+Resource Server (API Provider)->Resource Server (API Provider): Validate access token
+Resource Server (API Provider)->OpenID Provider: Request additional claims from UserInfo Endpoint, if needed
+OpenID Provider->OpenID Provider:Validate access token
+OpenID Provider->-Resource Server (API Provider):Return additional claims
+Resource Server (API Provider)->-Relying Party (Client):Return resource
+Relying Party (Client)->End User: View Results\n(if this is a web application or SPA,\nwill go through User-Agent)

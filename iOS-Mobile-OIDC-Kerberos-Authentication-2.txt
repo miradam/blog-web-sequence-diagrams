@@ -1,0 +1,53 @@
+title iOS Mobile OIDC Kerberos Authentication #2
+participant User as U
+participant Mobile App as M
+participant Authentication Library as AL
+participant SFAuthenticationSession as SFAS
+participant Safari as SF
+participant Domain Controller (Authentication Service) as AS
+participant Domain Controller (Ticket Granting Server) as TGS
+participant Identity Provider (OIDC/OAuth2 Authorization Endpoint) as AuthZ
+participant Identity Provider (OIDC/OAuth2 Token Endpoint) as Token
+participant Identity Provider (Authentication Service) as AuthNEP
+participant Identity Provider (Kerberos Library) as KL
+participant API Gateway as APIG
+participant API Provider as APIP
+U->M: User starts mobile app
+M->AL: The mobile app initializes authentication library.
+AL->SFAS: Start SFAUthenticationSession object.
+SFAS->SF: The SFAuthenticationSession object launches a Safari window.
+SF->AuthZ: Safari initiates the OIDC Authorization Code Flow by\n making a call to the Authorization Endpoint (client_id, scope, state, redirect_uri)
+AuthZ->SF: Since the user is not authenticated, an HTTP Redirect\n is returned to the SPNEGO Endpoint to initiate authentication.
+SF->AuthNEP: Follow redirect to the Authentication Service.
+AuthNEP->SF: Return login page.
+SF->SF: Safari processes the Negotiate response,prompts for the username\n and password, and triggers the Kerberos authentication of the device's user.
+SF->U: Present login page to user
+U->SF: Enter username and password
+SF->AuthNEP: Submit credentials.
+AuthNEP->KL: Initiate Kerberos Authentication
+KL->AS: Kerberos AS-REQ message 
+AS->AS: The Authentication Service processes the request
+AS->KL: Kerberos AS-REP
+KL->TGT: Kerberos TGT-REQ
+TGT->TGT: process the request
+TGT->KL: TGT-REP message
+KL->AuthNEP: Kereros Service Ticket returned to Authentication Service.
+AuthNEP->AuthNEP: Cache Kerberos Ticket, create IdP security \ncontext for this user, and set session-tracking cookie in response.
+AuthNEP->SF: Redirect 
+SF->AuthZ: OIDC Call (now with session-tracking cookie)
+AuthZ->AuthZ: Authroization Endpoint validates session tracking cookie maps to valid session
+AuthZ->SF: The Authorization Endpoint responds with a 302 redirect\nto the redirect_uri with the authorization code as a query parameter.
+SF->M: Authorization Code sent to application
+M->AL: AppAuth library's callback handler invoked
+AL->Token: Exchange Authorization Code for tokens
+Token->Token: The Token Endpoint validates the authorization code.
+Token->AL: Response includes Token, access token, and refresh token
+AL->AL: Validate ID Token & access token per spec. Cache tokens for future use.
+AL->M: Control returned to mobile app
+M->APIG: API call with the OAuth2 access token in the authorization header.
+APIG->APIG: Extract the access token, validate the token, make\n an authorization decision, and performs any other required processing.
+APIG->APIP: API request without access token (other\n credentials present to establish trust relationship)
+APIP->APIP: processes request
+APIP->APIG: Response
+APIG->M: Response
+M->U: Display results to user

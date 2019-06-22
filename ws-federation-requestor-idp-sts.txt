@@ -1,0 +1,16 @@
+title WS-Federation (Requestor IdP/STS)
+participant Requester
+participant Requester IdP/STS
+participant WS Resource
+Requester->WS Resource: Request resource
+WS Resource->Requester: Redirect requester to Resource IdP/STS.
+Requester->Requester IdP/STS: Redirect to Requester IdP/STS
+Requester IdP/STS->Requester: Begin authentiation sequence
+Requester->Requester IdP/STS: Submit credentials (end authentidation sequence)
+Requester IdP/STS->Requester IdP/STS: Validate credentials
+Requester IdP/STS->Requester: Redirect to Resource IdP/STS (with security token)
+Requester->WS Resource:Submit security token to authenticate user against Resource
+WS Resource->WS Resource: Validate security token
+WS Resource->Requester: Redirect to original resource (with security tracking mechanism)
+Requester->WS Resource: Request original resource (with security tracking)
+WS Resource->Requester: Return resource

@@ -1,0 +1,52 @@
+title iOS Mobile OIDC Kerberos Authentication
+participant User as U
+participant Mobile App (Client) as C
+participant Authentication Library as AL
+participant SFAuthenticationSession as SFAS
+participant Safari as SF
+participant iOS as iOS
+participant Domain Controller (Authentication Service) as AS
+participant Domain Controller (Ticket Granting Server) as TGS
+participant Identity Provider (OIDC/OAuth2 Authorization Endpoint) as AuthZ
+participant Identity Provider (OIDC/OAuth2 Token Endpoint) as Token
+participant Identity Provider (SPNEGO Authentication Service) as SPNEGO
+participant API Gateway as APIG
+participant API Provider as APIP
+U->C: User starts mobile app
+C->AL: The mobile app initializes authentication library.
+AL->SFAS: Start SFAUthenticationSession object.
+SFAS->SF: The SFAuthenticationSession object launches a Safari window.
+SF->AuthZ: Safari initiates the OIDC Authorization Code Flow by\n making a call to the Authorization Endpoint (client_id, scope, state, redirect_uri)
+AuthZ->SF: Since the user is not authenticated, an HTTP Redirect\n is returned to the SPNEGO Endpoint to initiate authentication.
+SF->SPNEGO: The redirect is followed to the SPENGO endpoint.
+SPNEGO->SF: Since the user is not authenticated, the SPNEGO endpoint\n responds with a response requesting the user authenticate (Response Code: 401, WWW-Authenticate: Negotiate).
+SF->SF: Safari processes the Negotiate response,prompts for the username\n and password, and triggers the Kerberos authentication of the device's user.
+SF->iOS: Initiate Kerberos Authentication
+SF->AS: Kerberos AS-REQ message 
+AS->AS: The Authentication Service processes the request
+AS->iOS: Kerberos AS-REP
+iOS->TGT: Kerberos TGT-REQ
+TGT->TGT: process the request
+TGT->iOS: TGT-REP message
+iOS->SF: Kereros Service Ticket returned
+SF->SF: generate a Kerberos AP-REQ message and place in SPNEGO negTokenInit.
+SF->SPNEGO: negTokenInit message to SPNEGO Endpoint. 
+SPNEGO->SPNEGO: SPNEGO Endpoint validates message
+SPNEGO->SF: AP-REP message embedded in a negTokenTarg in the WWW-Authenticate header.\n Furthermore, the message body contains an HTML page with a redirect meta tag that points back to the OAuth2 Authorization endpoint and an identity provider security session cookie is set.
+SF->AuthZ: OIDC Call (now with session-tracking cookie)
+AuthZ->AuthZ: Authroization Endpoint validates session tracking cookie maps to valid session
+AuthZ->SF: The Authorization Endpoint responds with a 302 redirect\nto the redirect_uri with the authorization code as a query parameter.
+SF->C: Authorization Code sent to application
+C->AL: AppAuth library's callback handler invoked
+AL->Token: Exchange Authorization Code for tokens
+Token->Token: The Token Endpoint validates the authorization code.
+Token->AL: Response includes Token, access token, and refresh token
+AL->AL: Validate ID Token & access token per spec. Cache tokens for future use.
+AL->C: Control returned to mobile app
+C->APIG: API call with the OAuth2 access token in the authorization header.
+APIG->APIG: Extract the access token, validate the token, make\n an authorization decision, and performs any other required processing.
+APIG->APIP: API request without access token (other\n credentials present to establish trust relationship)
+APIP->APIP: processes request
+APIP->APIG: Response
+APIG->C: Response
+C->U: Display results to user
